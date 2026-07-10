@@ -8,6 +8,7 @@ Open-source tooling for AI-assisted engineering, systems, and the occasional wei
 - **[`heads-up-claude`](https://github.com/axiomantic/heads-up-claude)** - Claude Code statusline with real-time token tracking. Written in Nim.
 - **[`headerkit`](https://github.com/axiomantic/headerkit)** - clang-based C/C++ header-parsing toolkit in Python with pluggable backends.
 - **[`soong`](https://github.com/axiomantic/soong)** - summons GPU instances for AI agent workflows.
+- **[`komputers`](https://github.com/axiomantic/komputers)** - GPU compute in Rust over the Kompute Vulkan framework: safe wrapper, C++ FFI bridge, and hand-written GLSL compute shaders (matmul, parallel reductions). Experimental.
 - **[`audiomancer`](https://github.com/axiomantic/audiomancer)** - MCP server for AI-assisted music production with TidalCycles.
 - **[`sonoscope`](https://github.com/axiomantic/sonoscope)** - machine-listening audio-QA harness: analyzes audio and MIDI to check what your DSP actually produced.
 
