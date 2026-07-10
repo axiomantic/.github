@@ -9,5 +9,6 @@ Open-source tooling for AI-assisted engineering, systems, and the occasional wei
 - **[`headerkit`](https://github.com/axiomantic/headerkit)** - C/C++ header-parsing toolkit with pluggable backends.
 - **[`soong`](https://github.com/axiomantic/soong)** - summons GPU instances for AI agent workflows.
 - **[`audiomancer`](https://github.com/axiomantic/audiomancer)** - MCP server for AI-assisted music production with TidalCycles.
+- **[`sonoscope`](https://github.com/axiomantic/sonoscope)** - machine-listening audio-QA harness: analyzes audio and MIDI to check what your DSP actually produced.
 
-Themes: AI developer tooling, MCP, systems, and a little audio.
+Themes: AI developer tooling, MCP, systems, and audio.
