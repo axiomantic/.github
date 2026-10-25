@@ -43,6 +43,8 @@ on:
         type: string
         default: ""
     secrets:
+      LLM_API_KEY:
+        required: false
       MOMUS_APP_ID:
         description: >-
           Optional. GitHub App ID used to mint an installation token so the
@@ -209,11 +211,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Debug secret presence
-        run: |
-          echo "has_llm_api_key=${{ secrets.LLM_API_KEY != '' }}"
-          echo "env_name=${{ inputs.environment }}"
 
       - name: Run momus
         uses: axiomantic/momus@v1
