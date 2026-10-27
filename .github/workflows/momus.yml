@@ -195,28 +195,34 @@ jobs:
       pull-requests: write
       issues: write
     steps:
-      - name: Detect GitHub App config
+      - name: Detect configuration
         # The `secrets` context cannot be referenced in step `if:` directly.
-        # Stage the values into env, then emit a boolean output the next
-        # step can gate on.
-        id: detect_app
+        # Stage the values into env, then emit boolean outputs downstream steps gate on.
+        id: detect_config
         env:
           APP_ID: ${{ secrets.MOMUS_APP_ID }}
           APP_KEY: ${{ secrets.MOMUS_APP_PRIVATE_KEY }}
+          API_KEY: ${{ secrets.LLM_API_KEY }}
         run: |
-          if [ -n "$APP_ID" ] && [ -n "$APP_KEY" ]; then
+          if [ -n "$APP_ID" ] && [ -n "$APP_KEY" ] && [[ "$APP_ID" =~ ^[0-9]+$ ]]; then
             echo "has_app=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_app=false" >> "$GITHUB_OUTPUT"
           fi
+          if [ -n "$API_KEY" ]; then
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::LLM_API_KEY is not configured; skipping AI review."
+          fi
 
       - name: Mint GitHub App token
-        # When the App secrets are configured, mint an installation token so
-        # the bot's reviews are attributed to the App (and APPROVE verdicts
-        # are accepted). Otherwise this step is skipped and downstream steps
-        # fall back to GITHUB_TOKEN.
+        # When the App secrets are configured and valid integer ID, mint an
+        # installation token so the bot's reviews are attributed to the App
+        # (and APPROVE verdicts are accepted). Otherwise this step is skipped
+        # and downstream steps fall back to GITHUB_TOKEN.
         id: app_token
-        if: steps.detect_app.outputs.has_app == 'true'
+        if: steps.detect_config.outputs.has_app == 'true'
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.MOMUS_APP_ID }}
@@ -252,6 +258,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run momus
+        if: steps.detect_config.outputs.has_key == 'true'
         uses: axiomantic/momus@v1
         env:
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
@@ -265,7 +272,7 @@ jobs:
           # token (capable of APPROVE) rather than the default github-actions
           # token (which GitHub rejects from approving). Without this signal
           # momus conservatively downgrades APPROVE to COMMENT.
-          MOMUS_USING_APP_TOKEN: ${{ steps.detect_app.outputs.has_app }}
+          MOMUS_USING_APP_TOKEN: ${{ steps.detect_config.outputs.has_app }}
           # Prefer the App-minted token (so APPROVE works) and fall back to
           # the default GITHUB_TOKEN when the App isn't configured.
           GITHUB_TOKEN: ${{ steps.app_token.outputs.token || secrets.GITHUB_TOKEN }}
