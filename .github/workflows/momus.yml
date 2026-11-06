@@ -107,35 +107,48 @@ jobs:
           COMMENT_AUTHOR_ASSOCIATION: ${{ github.event.comment.author_association }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           PR_AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
           IS_FORK: ${{ github.event.pull_request.head.repo.full_name != '' && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
+          is_collaborator() {
+            local user="$1"
+            local assoc="$2"
+            case "$assoc" in
+              OWNER|MEMBER|COLLABORATOR)
+                return 0
+                ;;
+            esac
+            if [ -n "$user" ]; then
+              local perm
+              perm=$(gh api "/repos/${REPO}/collaborators/${user}/permission" --jq .permission 2>/dev/null || echo "none")
+              case "$perm" in
+                admin|maintain|write)
+                  return 0
+                  ;;
+              esac
+            fi
+            return 1
+          }
+
           # Collaborator / Maintainer Gate:
           if [ "$ONLY_COLLABORATORS" = "true" ]; then
             if [ "$EVENT_NAME" = "issue_comment" ]; then
-              case "$COMMENT_AUTHOR_ASSOCIATION" in
-                OWNER|MEMBER|COLLABORATOR)
-                  ;;
-                *)
-                  echo "Commenter @${COMMENT_AUTHOR:-unknown} is not an repository OWNER, MEMBER, or COLLABORATOR (association: ${COMMENT_AUTHOR_ASSOCIATION:-NONE}); skipping review."
-                  echo "proceed=false" >> "$GITHUB_OUTPUT"
-                  exit 0
-                  ;;
-              esac
+              if ! is_collaborator "$COMMENT_AUTHOR" "$COMMENT_AUTHOR_ASSOCIATION"; then
+                echo "Commenter @${COMMENT_AUTHOR:-unknown} is not a repository OWNER, MEMBER, or COLLABORATOR (association: ${COMMENT_AUTHOR_ASSOCIATION:-NONE}); skipping review."
+                echo "proceed=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
             elif [ "$EVENT_NAME" = "pull_request" ]; then
               if [ "$IS_FORK" = "true" ]; then
                 echo "PR #$PR_NUMBER is from an external fork (@${PR_AUTHOR:-unknown}); skipping automatic review on open. Maintainers can trigger review by commenting $TRIGGER_COMMAND."
                 echo "proceed=false" >> "$GITHUB_OUTPUT"
                 exit 0
               fi
-              case "$PR_AUTHOR_ASSOCIATION" in
-                OWNER|MEMBER|COLLABORATOR)
-                  ;;
-                *)
-                  echo "PR author @${PR_AUTHOR:-unknown} is not an OWNER, MEMBER, or COLLABORATOR (association: ${PR_AUTHOR_ASSOCIATION:-NONE}); skipping automatic review on open. Maintainers can trigger review by commenting $TRIGGER_COMMAND."
-                  echo "proceed=false" >> "$GITHUB_OUTPUT"
-                  exit 0
-                  ;;
-              esac
+              if [ "$HEAD_REPO" != "$REPO" ] && ! is_collaborator "$PR_AUTHOR" "$PR_AUTHOR_ASSOCIATION"; then
+                echo "PR author @${PR_AUTHOR:-unknown} is not an OWNER, MEMBER, or COLLABORATOR (association: ${PR_AUTHOR_ASSOCIATION:-NONE}); skipping automatic review on open. Maintainers can trigger review by commenting $TRIGGER_COMMAND."
+                echo "proceed=false" >> "$GITHUB_OUTPUT"
+                exit 0
+              fi
             fi
           fi
 
