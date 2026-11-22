@@ -260,6 +260,8 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: actions/checkout@v4
         with:
+          # The review agent can read .git/config, so leave no token in it.
+          persist-credentials: false
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
@@ -267,6 +269,7 @@ jobs:
         if: github.event_name == 'issue_comment' || github.event_name == 'workflow_dispatch'
         uses: actions/checkout@v4
         with:
+          persist-credentials: false
           ref: ${{ steps.resolve_sha.outputs.sha }}
           fetch-depth: 0
 
